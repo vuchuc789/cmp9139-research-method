@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
-# === Load Data Efficiently ===
 data_path = "./btc-price-data.csv"
 cache_path = "./btc-price-data.pkl"
 
@@ -31,7 +30,6 @@ data.rename(columns={"Close": "price"}, inplace=True)
 # Ensure data is sorted by datetime index
 data.sort_index(inplace=True)
 
-# === Data Filtering and Preprocessing ===
 # Focus on daily data from 2015 to end of 2024
 data = data[(data.index >= "2015-01-01") & (data.index < "2025-01-01")]
 
@@ -52,22 +50,20 @@ print(description)
 print("Standard Deviation: ", math.sqrt(description.variance))
 print()
 
-# === Normality Tests ===
 log_returns = data["log_return"]
 log_returns_standardized = stats.zscore(log_returns)
 
-print("D’Agostino and Pearson:", stats.normaltest(log_returns))
-print()
 print("Shapiro-Wilk:", stats.shapiro(log_returns))
 print()
 print("Kolmogorov-Smirnov:", stats.kstest(log_returns_standardized, "norm"))
+print()
+print("D’Agostino and Pearson:", stats.normaltest(log_returns))
 print()
 print("Jarque-Bera:", stats.jarque_bera(log_returns))
 print()
 print("Anderson-Darling:", stats.anderson(log_returns, "norm"))
 print()
 
-# === Combined Plot: Histogram & Box Plot ===
 fig, axes = plt.subplots(
     1,
     2,
