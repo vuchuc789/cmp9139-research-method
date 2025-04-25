@@ -1,3 +1,4 @@
+import math
 import os
 
 import matplotlib.pyplot as plt
@@ -31,8 +32,8 @@ data.rename(columns={"Close": "price"}, inplace=True)
 data.sort_index(inplace=True)
 
 # === Data Filtering and Preprocessing ===
-# Focus on daily data from 2019 to end of 2023
-data = data[(data.index >= "2019-01-01") & (data.index < "2024-01-01")]
+# Focus on daily data from 2015 to end of 2024
+data = data[(data.index >= "2015-01-01") & (data.index < "2025-01-01")]
 
 # Resample to daily frequency, using the last price of each day
 data = data.resample("1D").last().dropna()
@@ -46,7 +47,9 @@ print(data.info())
 print()
 print(data.head())
 print()
-print(stats.describe(data["log_return"]))
+description = stats.describe(data["log_return"])
+print(description)
+print("Standard Deviation: ", math.sqrt(description.variance))
 print()
 
 # === Normality Tests ===
@@ -64,36 +67,43 @@ print()
 print("Anderson-Darling:", stats.anderson(log_returns, "norm"))
 print()
 
-# === Combined Plot: Histogram + Box Plot ===
-fig, ax = plt.subplots(
-    2, 1, figsize=(10, 8), sharex=True, gridspec_kw={"height_ratios": [4, 1]}
+# === Combined Plot: Histogram & Box Plot ===
+fig, axes = plt.subplots(
+    1,
+    2,
+    figsize=(10, 8),
+    gridspec_kw={"width_ratios": [4, 1]},
 )
 
-# Histogram (top)
-ax[0].hist(log_returns, bins=200, edgecolor="black")
-ax[0].set_title("Histogram of Log Returns")
-ax[0].set_ylabel("Frequency")
-ax[0].grid(True)
+# Histogram
+axes[0].hist(log_returns, bins=200, edgecolor="black")
+axes[0].set_title("Histogram of Log Returns")
+axes[0].set_xlabel("Log Return")
+axes[0].set_ylabel("Frequency")
+axes[0].grid(True)
 
-# Box Plot (bottom)
-ax[1].boxplot(log_returns, vert=False)
-ax[1].set_xlabel("Log Return")
-ax[1].grid(True)
+# Box Plot
+axes[1].boxplot(log_returns, vert=True)
+axes[1].set_title("Box Plot")
+axes[1].set_ylabel("Log Return")
+axes[1].grid(True)
 
 plt.tight_layout()
 plt.show()
 
-# === Plot: Q-Q Plot & Histogram with Overlaid Normal Curve ===
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+# === Q-Q Plot ===
+fig, ax = plt.subplots(figsize=(8, 8))
+stats.probplot(log_returns_standardized, dist="norm", plot=ax)
+ax.set_title("Q-Q Plot of Log Returns")
+plt.tight_layout()
+plt.show()
 
-# Q-Q Plot
-stats.probplot(log_returns_standardized, dist="norm", plot=axes[0])
-axes[0].set_title("Q-Q Plot of Log Returns")
-
-# Histogram with Normal Curve
+# === Histogram with Overlaid Normal Curve ===
+fig, ax = plt.subplots(figsize=(8, 8))
 x = np.linspace(log_returns.min(), log_returns.max(), 100)
 pdf = stats.norm.pdf(x, log_returns.mean(), log_returns.std())
-axes[1].hist(
+
+ax.hist(
     log_returns,
     bins=100,
     density=True,
@@ -101,9 +111,12 @@ axes[1].hist(
     color="skyblue",
     label="Log Returns Histogram",
 )
-axes[1].plot(x, pdf, "r", lw=2, label="Normal PDF")
-axes[1].set_title("Histogram with Normal Curve")
-axes[1].legend()
+ax.plot(x, pdf, "r", lw=2, label="Normal PDF")
+ax.set_title("Histogram with Normal Curve")
+ax.set_xlabel("Log Return")
+ax.set_ylabel("Density")
+ax.legend()
+ax.grid(True)
 
 plt.tight_layout()
 plt.show()
