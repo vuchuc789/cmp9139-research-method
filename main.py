@@ -16,16 +16,24 @@ else:
     # Read only necessary columns and convert timestamp to datetime
     data = pd.read_csv(
         data_path,
-        usecols=["Timestamp", "Close"],
-        dtype={"Close": np.float64},
+        usecols=[
+            "Timestamp",
+            # "Open",
+            # "High",
+            # "Low",
+            "Close",
+        ],
+        dtype={
+            # "Open": np.float64,
+            # "High": np.float64,
+            # "Low": np.float64,
+            "Close": np.float64,
+        },
         converters={"Timestamp": lambda x: pd.to_datetime(float(x), unit="s")},
         index_col="Timestamp",
     )
     # Save to cache for future fast loading
     data.to_pickle(cache_path)
-
-# Rename columns for clarity
-data.rename(columns={"Close": "price"}, inplace=True)
 
 # Ensure data is sorted by datetime index
 data.sort_index(inplace=True)
@@ -36,11 +44,17 @@ data = data[(data.index >= "2015-01-01") & (data.index < "2025-01-01")]
 # Resample to daily frequency, using the last price of each day
 data = data.resample("1D").last().dropna()
 
+# Print sample data
+# print(data.head())
+
+# Rename columns for clarity
+data.rename(columns={"Close": "price"}, inplace=True)
+
 # Calculate daily logarithmic returns
 data["log_return"] = np.log(data["price"] / data["price"].shift(1))
 data.dropna(subset=["log_return"], inplace=True)
 
-# === Print Basic Info ===
+# Print Basic Info
 print(data.info())
 print()
 print(data.head())
@@ -87,32 +101,31 @@ axes[1].grid(True)
 plt.tight_layout()
 plt.show()
 
-# === Q-Q Plot ===
-fig, ax = plt.subplots(figsize=(8, 8))
-stats.probplot(log_returns_standardized, dist="norm", plot=ax)
-ax.set_title("Q-Q Plot of Log Returns")
-plt.tight_layout()
-plt.show()
 
-# === Histogram with Overlaid Normal Curve ===
-fig, ax = plt.subplots(figsize=(8, 8))
-x = np.linspace(log_returns.min(), log_returns.max(), 100)
-pdf = stats.norm.pdf(x, log_returns.mean(), log_returns.std())
-
-ax.hist(
-    log_returns,
+# Histogram with Overlaid Normal Curve
+plt.figure(figsize=(8, 8))
+plt.hist(
+    log_returns_standardized,
     bins=100,
     density=True,
     alpha=0.6,
     color="skyblue",
-    label="Log Returns Histogram",
+    label="Standardized Log Returns",
 )
-ax.plot(x, pdf, "r", lw=2, label="Normal PDF")
-ax.set_title("Histogram with Normal Curve")
-ax.set_xlabel("Log Return")
-ax.set_ylabel("Density")
-ax.legend()
-ax.grid(True)
 
+x = np.linspace(-7, 6, 300)
+plt.plot(x, stats.norm.pdf(x, 0, 1), "r", lw=2, label="Standard Normal PDF")
+
+plt.title("Histogram of Standardized Log Returns with Normal Curve")
+plt.xlabel("Z-score")
+plt.ylabel("Density")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q-Q Plot
+fig, ax = plt.subplots(figsize=(8, 8))
+stats.probplot(log_returns_standardized, dist="norm", plot=ax)
+ax.set_title("Q-Q Plot of Log Returns")
 plt.tight_layout()
 plt.show()
